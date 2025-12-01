@@ -6,7 +6,7 @@ Run: python test-pinecone.py
 """
 
 import os
-from pinecone import Pinecone
+from test import Pinecone
 
 # Pinecone configuration
 PINECONE_API_KEY = os.getenv('PINECONE_API_KEY', 'YOUR_API_KEY_HERE')

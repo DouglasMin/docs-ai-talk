@@ -1,0 +1,19 @@
+services:
+  ai-doc-chat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ai-doc-chat
+    ports:
+      - "3000:3000"
+    # .env 파일이 같은 디렉토리에 있으면 docker compose가 자동으로 읽어서 변수를 치환해줍니다.
+    environment:
+      - AWS_REGION=${AWS_REGION}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN}
+      - S3_BUCKET=${S3_BUCKET}
+      - BEDROCK_KB_ID=${BEDROCK_KB_ID}
+      - BEDROCK_DATA_SOURCE_ID=${BEDROCK_DATA_SOURCE_ID}
+      - UPSTAGE_API_KEY=${UPSTAGE_API_KEY}
+      - NEXT_PUBLIC_WS_URL=${NEXT_PUBLIC_WS_URL}

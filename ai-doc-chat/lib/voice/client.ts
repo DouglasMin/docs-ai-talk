@@ -99,7 +99,7 @@ export class NovaClient {
     // Bedrock client
     this.bedrockClient = new BedrockRuntimeClient({
       region: config.aws.region,
-      credentials: config.aws.credentials,
+      // credentials: config.aws.credentials,
       requestHandler: nodeHttp2Handler,
     });
   }

@@ -13,7 +13,7 @@ const PROFILE = 'dongik2';
 async function queryKB(question: string) {
   const client = new BedrockAgentRuntimeClient({
     region: REGION,
-    credentials: fromIni({ profile: PROFILE }),
+    // credentials: fromIni({ profile: PROFILE }),
   });
 
   const command = new RetrieveCommand({

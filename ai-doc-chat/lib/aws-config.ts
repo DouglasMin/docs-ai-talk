@@ -11,47 +11,48 @@ import { SecretsManagerClient } from '@aws-sdk/client-secrets-manager';
 import { fromIni } from '@aws-sdk/credential-providers';
 
 const region = process.env.AWS_REGION || 'us-east-1';
-const profile = process.env.AWS_PROFILE || 'dongik2';
+// const profile = process.env.AWS_PROFILE || 'dongik2';
 
 // Shared credentials configuration
-const credentials = fromIni({ profile });
+// Use default provider chain which supports env vars, profile, etc.
+// const credentials = fromIni({ profile });
 
 // S3 Client
 export const s3Client = new S3Client({
   region,
-  credentials,
+  // credentials,
 });
 
 // DynamoDB Client
 export const dynamoDBClient = new DynamoDBClient({
   region,
-  credentials,
+  // credentials,
 });
 
 // Bedrock Agent Client (for KB management)
 export const bedrockAgentClient = new BedrockAgentClient({
   region,
-  credentials,
+  // credentials,
 });
 
 // Bedrock Agent Runtime Client (for queries)
 export const bedrockRuntimeClient = new BedrockAgentRuntimeClient({
   region,
-  credentials,
+  // credentials,
 });
 
 // Secrets Manager Client
 export const secretsClient = new SecretsManagerClient({
   region,
-  credentials,
+  // credentials,
 });
 
 // Environment variables
 export const config = {
   aws: {
     region,
-    profile,
-    credentials,
+    // profile,
+    // credentials,
   },
   s3: {
     bucket: process.env.S3_BUCKET!,

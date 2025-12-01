@@ -7,7 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getDocument, updateDocumentStatus } from '@/lib/services/dynamodb-service';
-import { getIngestionStatus } from '@/lib/services/bedrock-service';
+import { checkIngestionStatus } from '@/lib/services/bedrock-service';
 import { Document } from '@/types';
 
 export async function GET(
@@ -34,7 +34,7 @@ export async function GET(
     // If ingesting, check the ingestion job
     if (doc.status === 'ingesting' && doc.ingestionJobId) {
       try {
-        const jobStatus = await getIngestionStatus(doc.ingestionJobId);
+        const jobStatus = await checkIngestionStatus(doc.ingestionJobId);
         
         if (jobStatus.status === 'COMPLETE') {
           await updateDocumentStatus(docId, 'ready');

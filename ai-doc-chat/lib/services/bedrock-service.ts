@@ -28,7 +28,7 @@ import { config } from '../aws-config';
 export async function startIngestion(docId: string): Promise<{ jobId: string }> {
   const client = new BedrockAgentClient({
     region: config.aws.region,
-    credentials: config.aws.credentials,
+    // credentials: config.aws.credentials,
   });
 
   const command = new StartIngestionJobCommand({
@@ -57,7 +57,7 @@ export async function checkIngestionStatus(jobId: string): Promise<{
 }> {
   const client = new BedrockAgentClient({
     region: config.aws.region,
-    credentials: config.aws.credentials,
+    // credentials: config.aws.credentials,
   });
 
   const command = new GetIngestionJobCommand({
@@ -92,7 +92,7 @@ export async function queryKnowledgeBase(
   
   const client = new BedrockAgentRuntimeClient({
     region: config.aws.region,
-    credentials: config.aws.credentials,
+    // credentials: config.aws.credentials,
   });
 
   const vectorSearchConfig: any = {
@@ -166,7 +166,7 @@ Politely inform the user that you couldn't find relevant information in their do
 
     const client = new BedrockRuntimeClient({
       region: config.aws.region,
-      credentials: config.aws.credentials,
+      // credentials: config.aws.credentials,
     });
 
     const command = new ConverseStreamCommand({
@@ -216,7 +216,7 @@ ${context}`
   // 6. Call Nova Pro with Converse Stream API
   const client = new BedrockRuntimeClient({
     region: config.aws.region,
-    credentials: config.aws.credentials,
+    // credentials: config.aws.credentials,
   });
 
   const command = new ConverseStreamCommand({

@@ -3,14 +3,14 @@
  * Run this to verify AWS SDK is properly configured
  */
 
-import { s3Client, bedrockRuntimeClient, config } from './aws-config';
+import { s3Client, bedrockAgentClient, config } from './aws-config';
 import { ListBucketsCommand } from '@aws-sdk/client-s3';
 import { ListKnowledgeBasesCommand } from '@aws-sdk/client-bedrock-agent';
 
 export async function testAWSConnection() {
   console.log('Testing AWS connection...');
   console.log('Region:', config.aws.region);
-  console.log('Profile:', config.aws.profile);
+  // console.log('Profile:', config.aws.profile);
 
   try {
     // Test S3
@@ -19,7 +19,7 @@ export async function testAWSConnection() {
     console.log(`Found ${s3Response.Buckets?.length || 0} buckets`);
 
     // Test Bedrock
-    const bedrockResponse = await bedrockRuntimeClient.send(
+    const bedrockResponse = await bedrockAgentClient.send(
       new ListKnowledgeBasesCommand({})
     );
     console.log('✅ Bedrock connection successful');
