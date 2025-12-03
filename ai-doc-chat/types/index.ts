@@ -7,6 +7,7 @@ export type ContentType = 'text' | 'image' | 'table' | 'chart' | 'diagram';
 export type DocumentStatus = 
   | 'uploading' 
   | 'parsing' 
+  | 'parsed'
   | 'ingesting' 
   | 'ready' 
   | 'failed';

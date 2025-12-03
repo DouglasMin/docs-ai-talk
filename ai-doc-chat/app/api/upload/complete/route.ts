@@ -1,36 +1,34 @@
 /**
- * API Route: Complete Upload
+ * API Route: Complete Upload (Async)
  * POST /api/upload/complete
  * 
  * After S3 upload completes:
- * 1. Parse PDF with Upstage
- * 2. Store parsed content in S3
- * 3. Trigger Bedrock KB ingestion
- * 4. Update document status
+ * 1. Validate docId and s3Url
+ * 2. Send message to SQS for async processing
+ * 3. Return immediately with 'accepted' status
+ * 
+ * The actual processing (parse → upload → ingest) happens in a worker.
+ * Client should poll /api/documents/[docId]/status for updates.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { parseDocumentWithUpstage, formatForBedrockKB } from '@/lib/services/upstage-service';
-import { updateDocumentStatus, getDocument } from '@/lib/services/dynamodb-service';
-import { uploadParsedContent } from '@/lib/services/s3-service';
-import { startIngestion } from '@/lib/services/bedrock-service';
+import { getDocument } from '@/lib/services/dynamodb-service';
+import { sendIngestionMessage } from '@/lib/services/sqs-service';
 
 export async function POST(request: NextRequest) {
-  let docId: string | undefined;
-  
   try {
     const body = await request.json();
-    docId = body.docId;
-    const s3Url = body.s3Url;
+    const { docId, s3Url } = body;
 
+    // Validate required fields
     if (!docId || !s3Url) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: 'Missing required fields: docId and s3Url' },
         { status: 400 }
       );
     }
 
-    // Get document metadata
+    // Verify document exists
     const doc = await getDocument(docId);
     if (!doc) {
       return NextResponse.json(
@@ -39,48 +37,32 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Update status to parsing
-    await updateDocumentStatus(docId, 'parsing');
-    console.log(`Starting Upstage parsing for ${docId}...`);
-
-    // Parse with Upstage (synchronous)
-    const parseResult = await parseDocumentWithUpstage(s3Url);
-    console.log(`Parsed ${docId}: ${parseResult.metadata.pages} pages, ${parseResult.metadata.tables} tables`);
-
-    // Format for Bedrock KB
-    const formattedContent = formatForBedrockKB(parseResult.content);
-
-    // Upload parsed content to S3
-    console.log(`Uploading parsed content for ${docId}...`);
-    await uploadParsedContent(docId, formattedContent);
-
-    // Trigger Bedrock KB ingestion
-    console.log(`Starting KB ingestion for ${docId}...`);
-    const ingestionJob = await startIngestion(docId);
-
-    // Update status to ingesting
-    await updateDocumentStatus(docId, 'ingesting', undefined, ingestionJob.jobId);
-
-    return NextResponse.json({
-      success: true,
+    // Send message to SQS for async processing
+    const messageId = await sendIngestionMessage({
       docId,
-      message: 'Document parsed and ingestion started',
-      metadata: parseResult.metadata,
+      s3Url,
+      fileName: doc.name,
+      timestamp: new Date().toISOString(),
     });
-  } catch (error) {
-    console.error('Upload completion error:', error);
-    
-    // Update document status to failed (docId already extracted above)
-    if (docId) {
-      await updateDocumentStatus(
-        docId,
-        'failed',
-        error instanceof Error ? error.message : 'Unknown error'
-      );
-    }
 
+    console.log(`[Upload Complete] Queued document ${docId} for processing (MessageId: ${messageId})`);
+
+    // Return immediately - client should poll for status
+    return NextResponse.json({
+      accepted: true,
+      docId,
+      messageId,
+      message: 'Document queued for processing. Poll /api/documents/[docId]/status for updates.',
+    });
+
+  } catch (error) {
+    console.error('[Upload Complete] Error:', error);
+    
     return NextResponse.json(
-      { error: 'Failed to complete upload' },
+      { 
+        error: 'Failed to queue document for processing',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     );
   }

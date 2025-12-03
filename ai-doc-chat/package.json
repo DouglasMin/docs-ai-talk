@@ -5,8 +5,10 @@
   "scripts": {
     "dev": "tsx server-voice.mjs",
     "dev:next-only": "next dev",
+    "dev:worker": "tsx --watch --env-file=.env workers/ingestion-runner.ts",
     "build": "next build",
     "start": "node server-voice.mjs",
+    "worker": "tsx --env-file=.env workers/ingestion-runner.ts",
     "lint": "eslint"
   },
   "dependencies": {
@@ -16,10 +18,13 @@
     "@aws-sdk/client-dynamodb": "^3.936.0",
     "@aws-sdk/client-s3": "^3.937.0",
     "@aws-sdk/client-secrets-manager": "^3.936.0",
+    "@aws-sdk/client-sqs": "^3.936.0",
     "@aws-sdk/credential-providers": "^3.936.0",
     "@aws-sdk/lib-dynamodb": "^3.936.0",
     "@aws-sdk/s3-request-presigner": "^3.937.0",
     "@smithy/node-http-handler": "^4.4.5",
+    "@smithy/types": "^4.4.0",
+    "dotenv": "^17.2.3",
     "next": "16.0.3",
     "react": "19.2.0",
     "react-dom": "19.2.0",

@@ -15,7 +15,7 @@ export interface UpstageParseResult {
 }
 
 /**
- * Parse PDF with Upstage (Synchronous)
+ * Parse PDF with Upstage (Synchronous with Timeout)
  * Directly returns the parsed result
  * 
  * Supports:
@@ -24,39 +24,58 @@ export interface UpstageParseResult {
  * - Chart recognition (bar, line, pie charts)
  * - Table extraction with multi-page merge
  * - Equation recognition (LaTeX format)
+ * 
+ * Timeout: 3 minutes (configurable via UPSTAGE_TIMEOUT_MS)
  */
 export async function parseDocumentWithUpstage(pdfUrl: string): Promise<UpstageParseResult> {
-  // Fetch the PDF from S3
-  const pdfResponse = await fetch(pdfUrl);
-  const pdfBlob = await pdfResponse.blob();
+  const timeout = parseInt(process.env.UPSTAGE_TIMEOUT_MS || '180000', 10); // 3 minutes default
   
-  // Create form data
-  const formData = new FormData();
-  formData.append('document', pdfBlob, 'document.pdf');
-  formData.append('ocr', 'force'); // Force OCR for all documents
-  formData.append('model', 'document-parse'); // Use stable alias
-  
-  // Enable multi-page table merging for better table extraction
-  formData.append('merge_multipage_tables', 'true');
+  // Create AbortController for timeout
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
 
-  // Call synchronous API
-  const response = await fetch('https://api.upstage.ai/v1/document-digitization', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${config.upstage.apiKey}`,
-    },
-    body: formData,
-  });
+  try {
+    // Fetch the PDF from S3
+    const pdfResponse = await fetch(pdfUrl, { signal: controller.signal });
+    const pdfBlob = await pdfResponse.blob();
+    
+    // Create form data
+    const formData = new FormData();
+    formData.append('document', pdfBlob, 'document.pdf');
+    formData.append('ocr', 'force'); // Force OCR for all documents
+    formData.append('model', 'document-parse'); // Use stable alias
+    
+    // Enable multi-page table merging for better table extraction
+    formData.append('merge_multipage_tables', 'true');
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Upstage API error: ${errorText}`);
+    // Call synchronous API with timeout
+    const response = await fetch('https://api.upstage.ai/v1/document-digitization', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${config.upstage.apiKey}`,
+      },
+      body: formData,
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Upstage API error (${response.status}): ${errorText}`);
+    }
+
+    const result = await response.json();
+    
+    // Parse and return result
+    return parseUpstageResult(result);
+    
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error(`Upstage API request timed out after ${timeout}ms. Try a smaller document or contact support.`);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
   }
-
-  const result = await response.json();
-  
-  // Parse and return result
-  return parseUpstageResult(result);
 }
 
 /**

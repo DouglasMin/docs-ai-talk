@@ -97,11 +97,15 @@ npm install
 
 # 개발 서버 실행
 npm run dev
+
+# 워커 실행 (별도 터미널)
+npm run dev:worker
 ```
 
 서버가 시작되면:
 - **웹 애플리케이션**: http://localhost:3000
 - **WebSocket**: ws://localhost:3000/api/voice-ws
+- **워커**: 백그라운드에서 문서 처리
 
 ## 🔧 현재 개발 상태
 
@@ -114,6 +118,9 @@ npm run dev
 - [x] Tool Use 구현 (문서 검색)
 - [x] 세션 관리 및 이벤트 스트리밍
 - [x] UI 컴포넌트 기본 구조
+- [x] **비동기 문서 처리 파이프라인** (SQS + 워커)
+- [x] AWS SDK 재시도 및 타임아웃 설정
+- [x] Upstage 파싱 타임아웃 구현
 
 ### 🚧 개발 중
 - [ ] 오디오 품질 최적화 (노이즈 제거)

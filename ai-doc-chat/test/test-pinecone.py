@@ -1,22 +1,34 @@
 #!/usr/bin/env python3
 """
 Test script to check Pinecone index status
-Install: pip install pinecone-client
+Install: pip install pinecone
 Run: python test-pinecone.py
 """
 
 import os
-from test import Pinecone
+from pinecone import Pinecone
 
 # Pinecone configuration
-PINECONE_API_KEY = os.getenv('PINECONE_API_KEY', 'YOUR_API_KEY_HERE')
-INDEX_NAME = 'bedrock-kb-index'  # Your index name
+PINECONE_API_KEY = os.getenv('PINECONE_API_KEY', 'pcsk_tsubm_Tdk7FkZ7a63Jbrj3UejXbHyft41kiQaRCwbsmctcpX7QgvkoupDdc993SD7t2iq')
+INDEX_NAME = 'kb-vector4-dongikai'  # Your index name
 
 def check_pinecone():
     print("🔍 Checking Pinecone Index...\n")
     
     # Initialize Pinecone
     pc = Pinecone(api_key=PINECONE_API_KEY)
+    
+    # List all available indexes
+    print("📋 Available Indexes:")
+    indexes = pc.list_indexes()
+    if indexes:
+        for idx in indexes:
+            print(f"  - {idx.name} (dimension: {idx.dimension}, metric: {idx.metric})")
+    else:
+        print("  ⚠️  No indexes found. Please create an index first.")
+        return
+    
+    print(f"\n🎯 Checking index: {INDEX_NAME}\n")
     
     # Get index
     index = pc.Index(INDEX_NAME)
@@ -69,4 +81,4 @@ if __name__ == "__main__":
         print("\nMake sure to:")
         print("1. Set PINECONE_API_KEY environment variable")
         print("2. Update INDEX_NAME if different")
-        print("3. Install pinecone-client: pip install pinecone-client")
+        print("3. Install pinecone: pip install pinecone")
