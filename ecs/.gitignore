@@ -1,0 +1,9 @@
+# Deployment configuration (contains AWS account-specific info)
+deployment-config.sh
+
+# Task definition updates (temporary files)
+task-definition-*-updated.json
+
+# Logs
+*.log
+

@@ -1,0 +1,66 @@
+{
+  "family": "ai-doc-chat-worker",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "executionRoleArn": "arn:aws:iam::YOUR_ACCOUNT_ID:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::YOUR_ACCOUNT_ID:role/ai-doc-chat-task-role",
+  "containerDefinitions": [
+    {
+      "name": "ai-doc-chat-worker",
+      "image": "YOUR_ACCOUNT_ID.dkr.ecr.YOUR_REGION.amazonaws.com/ai-doc-chat-worker:latest",
+      "essential": true,
+      "environment": [
+        {
+          "name": "NODE_ENV",
+          "value": "production"
+        },
+        {
+          "name": "AWS_REGION",
+          "value": "us-east-1"
+        }
+      ],
+      "secrets": [
+        {
+          "name": "S3_BUCKET",
+          "valueFrom": "arn:aws:ssm:YOUR_REGION:YOUR_ACCOUNT_ID:parameter/ai-doc-chat/S3_BUCKET"
+        },
+        {
+          "name": "DYNAMODB_TABLE_NAME",
+          "valueFrom": "arn:aws:ssm:YOUR_REGION:YOUR_ACCOUNT_ID:parameter/ai-doc-chat/DYNAMODB_TABLE_NAME"
+        },
+        {
+          "name": "BEDROCK_KB_ID",
+          "valueFrom": "arn:aws:ssm:YOUR_REGION:YOUR_ACCOUNT_ID:parameter/ai-doc-chat/BEDROCK_KB_ID"
+        },
+        {
+          "name": "BEDROCK_DATA_SOURCE_ID",
+          "valueFrom": "arn:aws:ssm:YOUR_REGION:YOUR_ACCOUNT_ID:parameter/ai-doc-chat/BEDROCK_DATA_SOURCE_ID"
+        },
+        {
+          "name": "SQS_INGESTION_QUEUE_URL",
+          "valueFrom": "arn:aws:ssm:YOUR_REGION:YOUR_ACCOUNT_ID:parameter/ai-doc-chat/SQS_INGESTION_QUEUE_URL"
+        },
+        {
+          "name": "UPSTAGE_API_KEY",
+          "valueFrom": "arn:aws:ssm:YOUR_REGION:YOUR_ACCOUNT_ID:parameter/ai-doc-chat/UPSTAGE_API_KEY"
+        },
+        {
+          "name": "UPSTAGE_TIMEOUT_MS",
+          "valueFrom": "arn:aws:ssm:YOUR_REGION:YOUR_ACCOUNT_ID:parameter/ai-doc-chat/UPSTAGE_TIMEOUT_MS"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/ai-doc-chat-worker",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "worker",
+          "awslogs-create-group": "true"
+        }
+      }
+    }
+  ]
+}
+

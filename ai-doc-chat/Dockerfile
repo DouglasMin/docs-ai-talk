@@ -8,6 +8,12 @@ WORKDIR /app
 RUN apk add --no-cache libc6-compat
 
 COPY package.json package-lock.json ./
+
+# Update to patched versions before install
+RUN sed -i 's/"next": "16.0.3"/"next": "16.0.7"/' package.json && \
+    sed -i 's/"react": "19.2.0"/"react": "19.2.1"/' package.json && \
+    sed -i 's/"react-dom": "19.2.0"/"react-dom": "19.2.1"/' package.json
+
 RUN npm ci
 
 # Rebuild the source code only when needed
