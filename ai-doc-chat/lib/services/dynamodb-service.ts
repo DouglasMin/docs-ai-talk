@@ -3,13 +3,17 @@
  * Handles document metadata storage
  */
 
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, PutCommand, GetCommand, UpdateCommand, DeleteCommand, ScanCommand } from '@aws-sdk/lib-dynamodb';
 import { dynamoDBClient } from '../aws-config';
 import { Document, DocumentStatus } from '@/types';
 
 const docClient = DynamoDBDocumentClient.from(dynamoDBClient);
 const TABLE_NAME = process.env.DYNAMODB_TABLE_NAME || 'ai-doc-chat-documents';
+
+type DocumentDbRecord = Omit<Document, 'uploadedAt' | 'processedAt'> & {
+  uploadedAt: string;
+  processedAt?: string;
+};
 
 /**
  * Create document metadata
@@ -51,8 +55,7 @@ export async function getDocument(id: string): Promise<Document | null> {
 
   if (!response.Item) return null;
 
-  // Convert ISO strings back to Date objects
-  const item = response.Item as any;
+  const item = response.Item as DocumentDbRecord;
   return {
     ...item,
     uploadedAt: new Date(item.uploadedAt),
@@ -71,8 +74,8 @@ export async function updateDocumentStatus(
   upstageJobId?: string
 ): Promise<void> {
   let updateExpression = 'SET #status = :status, processedAt = :processedAt';
-  const expressionAttributeNames: any = { '#status': 'status' };
-  const expressionAttributeValues: any = {
+  const expressionAttributeNames: Record<string, string> = { '#status': 'status' };
+  const expressionAttributeValues: Record<string, unknown> = {
     ':status': status,
     ':processedAt': new Date().toISOString(),
   };
@@ -116,11 +119,14 @@ export async function listDocuments(): Promise<Document[]> {
 
   // Convert ISO strings back to Date objects
   const items = response.Items || [];
-  return items.map((item: any) => ({
-    ...item,
-    uploadedAt: new Date(item.uploadedAt),
-    processedAt: item.processedAt ? new Date(item.processedAt) : undefined,
-  })) as Document[];
+  return items.map((item): Document => {
+    const doc = item as DocumentDbRecord;
+    return {
+      ...doc,
+      uploadedAt: new Date(doc.uploadedAt),
+      processedAt: doc.processedAt ? new Date(doc.processedAt) : undefined,
+    };
+  });
 }
 
 /**

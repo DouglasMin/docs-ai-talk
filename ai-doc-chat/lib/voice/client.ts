@@ -12,6 +12,37 @@ import { config } from '../aws-config';
 import { MODEL_ID } from './config';
 import type { NovaSession } from './session';
 
+interface ResponseStreamEvent {
+  chunk?: {
+    bytes?: Uint8Array;
+  };
+}
+
+interface ParsedNovaEvent {
+  event?: {
+    contentStart?: {
+      type?: string;
+      role?: string;
+      additionalModelFields?: string;
+    };
+    textOutput?: {
+      content: string;
+      role?: string;
+    };
+    audioOutput?: {
+      content?: string;
+    };
+    toolUse?: {
+      toolUseId?: string;
+      toolName?: string;
+      input?: Record<string, unknown>;
+    };
+    contentEnd?: {
+      stopReason?: string;
+    };
+  };
+}
+
 /**
  * Convert async generator to Readable stream
  * The generator yields objects with { chunk: { bytes: Uint8Array } } format
@@ -112,7 +143,7 @@ export class NovaClient {
     session: NovaSession,
     onAudioChunk: (audio: Uint8Array) => void,
     onText: (text: string) => void,
-    onToolUse: (toolUseId: string, toolName: string, toolInput: any) => Promise<void>,
+    onToolUse: (toolUseId: string, toolName: string, toolInput: Record<string, unknown>) => Promise<void>,
     onContentEnd?: (stopReason: string) => void
   ) {
     try {
@@ -131,7 +162,7 @@ export class NovaClient {
         console.log('[NovaClient] Response received from Bedrock');
         
         // Use response.body for streaming
-        const responseStream = response.body;
+        const responseStream = response.body as AsyncIterable<ResponseStreamEvent> | undefined;
         
         if (!responseStream) {
           console.error('[NovaClient] No response stream found!');
@@ -159,10 +190,10 @@ export class NovaClient {
   }
   
   private async processResponses(
-    responseStream: any,
+    responseStream: AsyncIterable<ResponseStreamEvent>,
     onAudioChunk: (audio: Uint8Array) => void,
     onText: (text: string) => void,
-    onToolUse: (toolUseId: string, toolName: string, toolInput: any) => Promise<void>,
+    onToolUse: (toolUseId: string, toolName: string, toolInput: Record<string, unknown>) => Promise<void>,
     onContentEnd?: (stopReason: string) => void
   ) {
     try {
@@ -180,7 +211,7 @@ export class NovaClient {
         if (event.chunk?.bytes) {
           try {
             const textResponse = textDecoder.decode(event.chunk.bytes);
-            const jsonResponse = JSON.parse(textResponse);
+            const jsonResponse = JSON.parse(textResponse) as ParsedNovaEvent;
 
             if (jsonResponse.event) {
               // Handle contentStart - track generation stage
@@ -250,7 +281,7 @@ export class NovaClient {
                 const toolUse = jsonResponse.event.toolUse;
                 const toolUseId = toolUse.toolUseId || '';
                 const toolName = toolUse.toolName || '';
-                const toolInput = toolUse.input || {};
+                const toolInput = (toolUse.input ?? {}) as Record<string, unknown>;
                 
                 await onToolUse(toolUseId, toolName, toolInput);
               }

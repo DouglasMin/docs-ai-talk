@@ -17,7 +17,6 @@ export function useIngestionStatus(docId: string | null, enabled: boolean = true
   useEffect(() => {
     if (!docId || !enabled) return;
 
-    let intervalId: NodeJS.Timeout;
     let isMounted = true;
 
     const checkStatus = async () => {
@@ -35,7 +34,7 @@ export function useIngestionStatus(docId: string | null, enabled: boolean = true
           // Stop polling if ingestion is complete or failed
           if (data.status === 'ready' || data.status === 'failed') {
             setIsPolling(false);
-            if (intervalId) clearInterval(intervalId);
+            clearInterval(intervalId);
           }
         }
       } catch (error) {
@@ -48,14 +47,12 @@ export function useIngestionStatus(docId: string | null, enabled: boolean = true
 
     // Start polling
     setIsPolling(true);
+    const intervalId = setInterval(checkStatus, 5000);
     checkStatus(); // Check immediately
-
-    // Poll every 5 seconds
-    intervalId = setInterval(checkStatus, 5000);
 
     return () => {
       isMounted = false;
-      if (intervalId) clearInterval(intervalId);
+      clearInterval(intervalId);
     };
   }, [docId, enabled]);
 

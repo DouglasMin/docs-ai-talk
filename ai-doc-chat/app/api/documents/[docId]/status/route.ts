@@ -8,14 +8,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDocument, updateDocumentStatus } from '@/lib/services/dynamodb-service';
 import { checkIngestionStatus } from '@/lib/services/bedrock-service';
-import { Document } from '@/types';
+
+type RouteParams = { docId: string };
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ docId: string }> }
+  { params }: { params: RouteParams | Promise<RouteParams> }
 ) {
   try {
-    const { docId } = await params;
+    const { docId } = await Promise.resolve(params);
 
     // Get document from DB
     const doc = await getDocument(docId);

@@ -5,11 +5,21 @@ import DocumentSidebar from '@/components/DocumentSidebar';
 import ChatArea from '@/components/ChatArea';
 import EmptyState from '@/components/EmptyState';
 import { useDocuments } from '@/lib/hooks/useDocuments';
-import { Document } from '@/types';
 
 export default function Home() {
-  const { documents, loading, refreshDocuments, addDocument } = useDocuments();
+  const { 
+    documents, 
+    loading, 
+    refreshDocuments, 
+    addDocument,
+    deleteDocument,
+    deletingDocIds,
+  } = useDocuments();
   const [selectedDoc, setSelectedDoc] = useState<string | null>(null);
+  const activeSelectedDoc =
+    selectedDoc && documents.some((doc) => doc.id === selectedDoc)
+      ? selectedDoc
+      : null;
 
   // Poll status for documents that are processing (every 10 seconds)
   useEffect(() => {
@@ -64,9 +74,11 @@ export default function Home() {
       <DocumentSidebar 
         documents={documents}
         loading={loading}
-        selectedDoc={selectedDoc}
+        selectedDoc={activeSelectedDoc}
+        deletingDocIds={deletingDocIds}
         onSelectDoc={setSelectedDoc}
         onRefresh={refreshDocuments}
+        onDeleteDoc={deleteDocument}
       />
 
       {/* Main Chat Area */}
@@ -77,7 +89,7 @@ export default function Home() {
             refreshDocuments();
           }} />
         ) : (
-          <ChatArea selectedDoc={selectedDoc} />
+          <ChatArea selectedDoc={activeSelectedDoc} />
         )}
       </div>
     </div>

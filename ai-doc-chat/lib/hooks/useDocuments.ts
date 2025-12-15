@@ -10,6 +10,7 @@ export function useDocuments() {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deletingDocIds, setDeletingDocIds] = useState<Set<string>>(new Set());
 
   const fetchDocuments = async () => {
     try {
@@ -49,6 +50,44 @@ export function useDocuments() {
     setDocuments((prev) => prev.filter((doc) => doc.id !== id));
   };
 
+  const deleteDocument = async (id: string) => {
+    setDeletingDocIds((prev) => {
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
+
+    try {
+      const response = await fetch(`/api/documents/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        let message = 'Failed to delete document';
+        try {
+          const data = await response.json();
+          message = data.error || message;
+        } catch {
+          // ignore
+        }
+        throw new Error(message);
+      }
+
+      removeDocument(id);
+      setError(null);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to delete document';
+      setError(message);
+      throw err instanceof Error ? err : new Error(message);
+    } finally {
+      setDeletingDocIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    }
+  };
+
   useEffect(() => {
     fetchDocuments();
   }, []);
@@ -60,6 +99,8 @@ export function useDocuments() {
     refreshDocuments,
     addDocument,
     updateDocument,
+    deleteDocument,
     removeDocument,
+    deletingDocIds,
   };
 }

@@ -4,7 +4,12 @@
  */
 
 import { s3Client, config } from '../aws-config';
-import { PutObjectCommand } from '@aws-sdk/client-s3';
+import { 
+  DeleteObjectCommand, 
+  DeleteObjectsCommand,
+  ListObjectsV2Command,
+  PutObjectCommand 
+} from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 export interface PresignedUrlResult {
@@ -61,4 +66,52 @@ export async function uploadParsedContent(
   );
 
   return key;
+}
+
+/**
+ * Delete an object from S3. Safe to call even if the object is missing.
+ */
+export async function deleteObjectByKey(key: string): Promise<void> {
+  if (!key) return;
+
+  await s3Client.send(
+    new DeleteObjectCommand({
+      Bucket: config.s3.bucket,
+      Key: key,
+    })
+  );
+}
+
+/**
+ * Delete all objects under a prefix (e.g., remove folder contents)
+ */
+export async function deleteObjectsByPrefix(prefix: string): Promise<void> {
+  if (!prefix) return;
+
+  let continuationToken: string | undefined;
+
+  do {
+    const listResponse = await s3Client.send(
+      new ListObjectsV2Command({
+        Bucket: config.s3.bucket,
+        Prefix: prefix,
+        ContinuationToken: continuationToken,
+      })
+    );
+
+    const objects = listResponse.Contents ?? [];
+    if (objects.length > 0) {
+      await s3Client.send(
+        new DeleteObjectsCommand({
+          Bucket: config.s3.bucket,
+          Delete: {
+            Objects: objects.map((obj) => ({ Key: obj.Key! })),
+            Quiet: true,
+          },
+        })
+      );
+    }
+
+    continuationToken = listResponse.IsTruncated ? listResponse.NextContinuationToken : undefined;
+  } while (continuationToken);
 }

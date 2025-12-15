@@ -12,6 +12,7 @@ import {
 import {
   BedrockAgentRuntimeClient,
   RetrieveCommand,
+  type KnowledgeBaseVectorSearchConfiguration,
 } from '@aws-sdk/client-bedrock-agent-runtime';
 import {
   BedrockRuntimeClient,
@@ -95,7 +96,7 @@ export async function queryKnowledgeBase(
     // credentials: config.aws.credentials,
   });
 
-  const vectorSearchConfig: any = {
+  const vectorSearchConfig: KnowledgeBaseVectorSearchConfiguration = {
     numberOfResults: maxResults,
   };
 

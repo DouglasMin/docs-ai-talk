@@ -5,6 +5,22 @@
 
 import { config } from '../aws-config';
 
+interface UpstageElement {
+  category?: string;
+  page?: number;
+}
+
+interface UpstageContent {
+  html?: string;
+  markdown?: string;
+  text?: string;
+}
+
+interface UpstageApiResponse {
+  elements?: UpstageElement[];
+  content?: UpstageContent;
+}
+
 export interface UpstageParseResult {
   content: string;
   metadata: {
@@ -63,7 +79,7 @@ export async function parseDocumentWithUpstage(pdfUrl: string): Promise<UpstageP
       throw new Error(`Upstage API error (${response.status}): ${errorText}`);
     }
 
-    const result = await response.json();
+    const result = (await response.json()) as UpstageApiResponse;
     
     // Parse and return result
     return parseUpstageResult(result);
@@ -81,15 +97,15 @@ export async function parseDocumentWithUpstage(pdfUrl: string): Promise<UpstageP
 /**
  * Parse Upstage result into our format
  */
-export function parseUpstageResult(result: any): UpstageParseResult {
+export function parseUpstageResult(result: UpstageApiResponse): UpstageParseResult {
   // Extract metadata from Upstage response
-  const tables = result.elements?.filter((e: any) => e.category === 'table').length || 0;
-  const charts = result.elements?.filter((e: any) => e.category === 'chart').length || 0;
-  const figures = result.elements?.filter((e: any) => e.category === 'figure').length || 0;
+  const tables = result.elements?.filter((e) => e.category === 'table').length || 0;
+  const charts = result.elements?.filter((e) => e.category === 'chart').length || 0;
+  const figures = result.elements?.filter((e) => e.category === 'figure').length || 0;
   
   // Get total pages from elements
-  const pages = result.elements?.length > 0 
-    ? Math.max(...result.elements.map((e: any) => e.page || 1))
+  const pages = result.elements?.length
+    ? Math.max(...result.elements.map((e) => e.page || 1))
     : 1;
   
   return {

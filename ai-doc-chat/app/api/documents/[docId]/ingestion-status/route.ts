@@ -9,12 +9,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDocument, updateDocumentStatus } from '@/lib/services/dynamodb-service';
 import { checkIngestionStatus } from '@/lib/services/bedrock-service';
 
+type RouteParams = { docId: string };
+
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ docId: string }> }
+  { params }: { params: RouteParams | Promise<RouteParams> }
 ) {
   try {
-    const { docId } = await params;
+    const { docId } = await Promise.resolve(params);
 
     // Get document from DB
     const doc = await getDocument(docId);
@@ -26,12 +28,12 @@ export async function GET(
     }
 
     // If not ingesting or no job ID, return current status
-    if (doc.status !== 'ingesting' || !(doc as any).ingestionJobId) {
+    if (doc.status !== 'ingesting' || !doc.ingestionJobId) {
       return NextResponse.json({ status: doc.status });
     }
 
     // Check ingestion job status
-    const jobStatus = await checkIngestionStatus((doc as any).ingestionJobId);
+    const jobStatus = await checkIngestionStatus(doc.ingestionJobId);
 
     // Map Bedrock status to our status
     if (jobStatus.status === 'COMPLETE') {

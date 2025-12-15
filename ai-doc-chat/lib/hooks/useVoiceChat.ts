@@ -10,7 +10,7 @@ interface UseVoiceChatOptions {
   onError?: (error: string) => void;
 }
 
-interface VoiceMessage {
+export interface VoiceMessage {
   id: string;
   role: 'user' | 'assistant';
   content: string;
@@ -82,7 +82,7 @@ export function useVoiceChat(options: UseVoiceChatOptions = {}) {
   // Sequential playback (prevents audio glitches)
   // Based on AWS official documentation: https://docs.aws.amazon.com/nova/latest/userguide/output-events.html
   // Improved: Use precise timing to prevent gaps between chunks
-  const playNextAudioChunk = useCallback(() => {
+  const playNextAudioChunk = useCallback(function handlePlayNextAudioChunk() {
     if (audioQueueRef.current.length === 0) {
       isPlayingAudioRef.current = false;
       return;
@@ -130,7 +130,7 @@ export function useVoiceChat(options: UseVoiceChatOptions = {}) {
       // Use onended callback for seamless playback
       source.onended = () => {
         // Schedule next chunk immediately to prevent gaps
-        playNextAudioChunk();
+        handlePlayNextAudioChunk();
       };
       
       // Start playback immediately
@@ -142,7 +142,7 @@ export function useVoiceChat(options: UseVoiceChatOptions = {}) {
     } catch (error) {
       console.error('❌ Audio playback error:', error);
       // Continue with next chunk even if this one fails
-      playNextAudioChunk();
+      handlePlayNextAudioChunk();
     }
   }, []);
 
@@ -385,4 +385,3 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
   }
   return btoa(binary);
 }
-

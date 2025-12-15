@@ -17,12 +17,18 @@ interface SessionConfig {
   docId?: string;
 }
 
+type EventPayload = Record<string, unknown>;
+
+interface EventWrapper {
+  event: EventPayload;
+}
+
 export class NovaSession {
   public sessionId: string;
   private voiceId: string;
   private docId?: string;
-  private audioQueue: any[] = []; // Changed to any[] to hold audio events (not Uint8Array)
-  private toolResultQueue: any[] = [];
+  private audioQueue: EventWrapper[] = [];
+  private toolResultQueue: EventPayload[] = [];
   private isActive: boolean = false;
   public sessionReady: boolean = false; // Add sessionReady flag
   private textEncoder = new TextEncoder();
@@ -39,7 +45,7 @@ export class NovaSession {
   /**
    * Generate event stream for Bedrock
    */
-  async *generateEventStream(): AsyncGenerator<any> {
+  async *generateEventStream(): AsyncGenerator<{ chunk: { bytes: Uint8Array } }> {
     this.promptName = randomUUID();
     this.audioContentName = randomUUID();
 
@@ -262,7 +268,7 @@ export class NovaSession {
           content: base64Audio
         }
       }
-    } as any);
+    });
     
     console.log(`[Session ${this.sessionId}] Audio chunk added to queue. Queue size:`, this.audioQueue.length);
   }
@@ -270,18 +276,20 @@ export class NovaSession {
   /**
    * Add tool result to queue
    */
-  addToolResult(toolResult: any) {
+  addToolResult(toolResult: EventPayload) {
     this.toolResultQueue.push(toolResult);
   }
 
   /**
    * Handle tool use request from Nova Sonic
    */
-  async handleToolUse(toolUseId: string, toolName: string, toolInput: any) {
+  async handleToolUse(toolUseId: string, toolName: string, toolInput: Record<string, unknown>) {
     console.log(`[Session ${this.sessionId}] Tool use:`, toolName, toolInput);
 
     if (toolName === 'query_documents') {
-      const query = toolInput.query;
+      const inputWithQuery = toolInput as { query?: unknown };
+      const query =
+        typeof inputWithQuery.query === 'string' ? inputWithQuery.query : '';
 
       try {
         // Query KB
@@ -360,7 +368,7 @@ export class NovaSession {
           contentName: this.audioContentName,
         },
       },
-    } as any);
+    });
     console.log(`[Session ${this.sessionId}] Audio contentEnd queued`);
 
     // promptEnd
@@ -370,7 +378,7 @@ export class NovaSession {
           promptName: this.promptName,
         },
       },
-    } as any);
+    });
     console.log(`[Session ${this.sessionId}] promptEnd queued`);
 
     // sessionEnd
@@ -378,7 +386,7 @@ export class NovaSession {
       event: {
         sessionEnd: {},
       },
-    } as any);
+    });
     console.log(`[Session ${this.sessionId}] sessionEnd queued`);
 
     // 3. Clear queues after a brief delay (allow events to be sent)

@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
+import { Document } from '@/types';
 
 interface EmptyStateProps {
-  onUploadComplete: (doc: any) => void;
+  onUploadComplete: (doc: Document) => void;
 }
 
 interface UploadProgress {
@@ -51,7 +52,6 @@ export default function EmptyState({ onUploadComplete }: EmptyStateProps) {
     console.log('handleFiles called with', files);
     for (const file of files) {
       console.log('Processing file:', file.name);
-      const uploadId = Date.now().toString();
       
       // Add to uploads list
       setUploads(prev => {
@@ -77,7 +77,7 @@ export default function EmptyState({ onUploadComplete }: EmptyStateProps) {
 
         if (!response.ok) throw new Error('Failed to get upload URL');
 
-        const { docId, uploadUrl } = await response.json();
+        const { docId, uploadUrl, key } = await response.json();
 
         // Upload to S3 with progress
         await new Promise<void>((resolve, reject) => {
@@ -126,7 +126,15 @@ export default function EmptyState({ onUploadComplete }: EmptyStateProps) {
         ));
 
         // Notify parent
-        onUploadComplete({ id: docId, name: file.name });
+        onUploadComplete({
+          id: docId,
+          name: file.name,
+          s3Key: key,
+          status: 'uploading',
+          fileSize: file.size,
+          contentTypes: [],
+          uploadedAt: new Date(),
+        });
 
         // Remove from list after 2 seconds
         setTimeout(() => {

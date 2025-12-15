@@ -2,18 +2,29 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useChat } from '@/lib/hooks/useChat';
-import { useVoiceChat } from '@/lib/hooks/useVoiceChat';
+import { useVoiceChat, type VoiceMessage } from '@/lib/hooks/useVoiceChat';
 
 interface ChatAreaProps {
   selectedDoc: string | null;
 }
+
+type CombinedMessage = {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
+  isVoice?: boolean;
+};
+
+const isVoiceMessage = (message: CombinedMessage): message is VoiceMessage =>
+  (message as VoiceMessage).isVoice === true;
 
 export default function ChatArea({ selectedDoc }: ChatAreaProps) {
   const [input, setInput] = useState('');
   const [mode, setMode] = useState<'text' | 'voice'>('text');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
-  const { messages, streamingMessage, isLoading, sendMessage, clearChat } = useChat({
+  const { messages, streamingMessage, isLoading, sendMessage } = useChat({
     onError: (error) => {
       console.error('Chat error:', error);
     },
@@ -46,7 +57,7 @@ export default function ChatArea({ selectedDoc }: ChatAreaProps) {
   };
 
   // Combine text and voice messages, sorted by timestamp
-  const allMessages = [...messages, ...voiceMessages].sort(
+  const allMessages: CombinedMessage[] = [...messages, ...voiceMessages].sort(
     (a, b) => a.timestamp.getTime() - b.timestamp.getTime()
   );
   
@@ -136,8 +147,7 @@ export default function ChatArea({ selectedDoc }: ChatAreaProps) {
         ) : (
           <>
             {allMessages.map((message) => {
-              const isVoiceMessage = 'isVoice' in message && (message as any).isVoice === true;
-              
+              const voiceMessage = isVoiceMessage(message);
               return (
                 <div
                   key={message.id}
@@ -153,7 +163,7 @@ export default function ChatArea({ selectedDoc }: ChatAreaProps) {
                     `}
                   >
                     <div className="flex items-start space-x-2">
-                      {isVoiceMessage && (
+                      {voiceMessage && (
                         <svg className="w-4 h-4 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
                           <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" />
                           <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" />
